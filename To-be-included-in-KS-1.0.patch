@@ -1,0 +1,525 @@
+From patchwork Thu May 30 13:13:29 2019
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Yordan Karadzhov <ykaradzhov@vmware.com>
+X-Patchwork-Id: 10968699
+Return-Path: <linux-trace-devel-owner@kernel.org>
+Received: from mail.wl.linuxfoundation.org (pdx-wl-mail.web.codeaurora.org
+ [172.30.200.125])
+	by pdx-korg-patchwork-2.web.codeaurora.org (Postfix) with ESMTP id E7DF592A
+	for <patchwork-linux-trace-devel@patchwork.kernel.org>;
+ Thu, 30 May 2019 13:14:57 +0000 (UTC)
+Received: from mail.wl.linuxfoundation.org (localhost [127.0.0.1])
+	by mail.wl.linuxfoundation.org (Postfix) with ESMTP id D9DB528672
+	for <patchwork-linux-trace-devel@patchwork.kernel.org>;
+ Thu, 30 May 2019 13:14:57 +0000 (UTC)
+Received: by mail.wl.linuxfoundation.org (Postfix, from userid 486)
+	id CE38528806; Thu, 30 May 2019 13:14:57 +0000 (UTC)
+X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on
+	pdx-wl-mail.web.codeaurora.org
+X-Spam-Level: 
+X-Spam-Status: No, score=-7.9 required=2.0 tests=BAYES_00,MAILING_LIST_MULTI,
+	RCVD_IN_DNSWL_HI autolearn=ham version=3.3.1
+Received: from vger.kernel.org (vger.kernel.org [209.132.180.67])
+	by mail.wl.linuxfoundation.org (Postfix) with ESMTP id 19617289FA
+	for <patchwork-linux-trace-devel@patchwork.kernel.org>;
+ Thu, 30 May 2019 13:14:57 +0000 (UTC)
+Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
+        id S1726469AbfE3NO4 (ORCPT
+        <rfc822;patchwork-linux-trace-devel@patchwork.kernel.org>);
+        Thu, 30 May 2019 09:14:56 -0400
+Received: from mail-pg1-f196.google.com ([209.85.215.196]:36266 "EHLO
+        mail-pg1-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726399AbfE3NO4 (ORCPT
+        <rfc822;linux-trace-devel@vger.kernel.org>);
+        Thu, 30 May 2019 09:14:56 -0400
+Received: by mail-pg1-f196.google.com with SMTP id a3so2026098pgb.3
+        for <linux-trace-devel@vger.kernel.org>;
+ Thu, 30 May 2019 06:14:55 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+         :references:mime-version:content-transfer-encoding;
+        bh=E0QtKTkX83ecoTU+lkiNCsXhacNxgzBf0zZeRLm5dTM=;
+        b=HHXMJV8Q/szh0+9wYqyWfwxNZxTiDctzu74mz7aVvKI5PGYlG9V1VyMjSMC1KPnCB6
+         WtJX0KFPZRRZqLqyugjyeaWgmRC9Tm36lpcKoj5JgEykaSFTyAvLGf2+XrXPOLRX7KkA
+         IZPSn8mfXrP1jw3D6qQKQYq+TosQWwTEckgP3ZvW+K1oRLs8EcuMLVBjIj94MskSrWMc
+         RTUG137OLKkQPN8U+2Qwtfy+Dn/m4ZL9G7iRptYBGwPeqrjoBjAhmPFG+OnJfN+5FExm
+         QEKEjnj7U5f8q6LU4m9AimyQ/iKJNFvis//HikpfHpHb35eaQ/HZDXpxqWPya/uCJgn7
+         3Lvw==
+X-Gm-Message-State: APjAAAXvG+chuHzme/X5E2FxIaxmCCKBqyGMCUCGrXIG8eUK98Bj1/+J
+        Q+RCLsD+BAVWgwu/ajnyts8KUsVn
+X-Google-Smtp-Source: 
+ APXvYqwOykT2elNf8sAdetNzaQYQKaO5pfzVv0adRbm6GxwDYLSTXdCdcMQUH7RLkPIizJ5e7cql0A==
+X-Received: by 2002:a63:f44b:: with SMTP id p11mr3714793pgk.225.1559222095592;
+        Thu, 30 May 2019 06:14:55 -0700 (PDT)
+Received: from mamba.eng.vmware.com ([146.247.46.5])
+        by smtp.gmail.com with ESMTPSA id
+ d19sm2419627pjs.22.2019.05.30.06.14.53
+        (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 30 May 2019 06:14:54 -0700 (PDT)
+From: Yordan Karadzhov <ykaradzhov@vmware.com>
+To: rostedt@goodmis.org
+Cc: linux-trace-devel@vger.kernel.org,
+        Yordan Karadzhov <ykaradzhov@vmware.com>
+Subject: [PATCH 1/2] kernel-shark: Add new dataloading method to be used by
+ the NumPu interface
+Date: Thu, 30 May 2019 16:13:29 +0300
+Message-Id: <20190530131330.21701-2-ykaradzhov@vmware.com>
+X-Mailer: git-send-email 2.20.1
+In-Reply-To: <20190530131330.21701-1-ykaradzhov@vmware.com>
+References: <20190530131330.21701-1-ykaradzhov@vmware.com>
+MIME-Version: 1.0
+Sender: linux-trace-devel-owner@vger.kernel.org
+Precedence: bulk
+List-ID: <linux-trace-devel.vger.kernel.org>
+X-Mailing-List: linux-trace-devel@vger.kernel.org
+X-Virus-Scanned: ClamAV using ClamSMTP
+
+The new function loads the content of the trace data file into a
+table / matrix, made of columns / arrays of data having various integer
+types. Later those arrays will be wrapped as NumPy arrays.
+
+Signed-off-by: Yordan Karadzhov <ykaradzhov@vmware.com>
+---
+ kernel-shark/src/libkshark.c | 139 +++++++++++++++++++++++++++++++++++
+ kernel-shark/src/libkshark.h |   7 ++
+ 2 files changed, 146 insertions(+)
+
+diff --git a/kernel-shark/src/libkshark.c b/kernel-shark/src/libkshark.c
+index 175279c..608d570 100644
+--- a/kernel-shark/src/libkshark.c
++++ b/kernel-shark/src/libkshark.c
+@@ -957,6 +957,145 @@ ssize_t kshark_load_data_records(struct kshark_context *kshark_ctx,
+ 	return -ENOMEM;
+ }
+ 
++static inline void free_ptr(void *ptr)
++{
++	if (ptr)
++		free(*(void **)ptr);
++}
++
++static bool data_matrix_alloc(size_t n_rows, uint64_t **offset_array,
++					     uint16_t **cpu_array,
++					     uint64_t **ts_array,
++					     uint16_t **pid_array,
++					     int **event_array)
++{
++	if (offset_array) {
++		*offset_array = calloc(n_rows, sizeof(**offset_array));
++		if (!*offset_array)
++			return false;
++	}
++
++	if (cpu_array) {
++		*cpu_array = calloc(n_rows, sizeof(**cpu_array));
++		if (!*cpu_array)
++			goto free_offset;
++	}
++
++	if (ts_array) {
++		*ts_array = calloc(n_rows, sizeof(**ts_array));
++		if (!*ts_array)
++			goto free_cpu;
++	}
++
++	if (pid_array) {
++		*pid_array = calloc(n_rows, sizeof(**pid_array));
++		if (!*pid_array)
++			goto free_ts;
++	}
++
++	if (event_array) {
++		*event_array = calloc(n_rows, sizeof(**event_array));
++		if (!*event_array)
++			goto free_pid;
++	}
++
++	return true;
++
++ free_pid:
++	free_ptr(pid_array);
++ free_ts:
++	free_ptr(ts_array);
++ free_cpu:
++	free_ptr(cpu_array);
++ free_offset:
++	free_ptr(offset_array);
++
++	fprintf(stderr, "Failed to allocate memory during data loading.\n");
++	return false;
++}
++
++/**
++ * @brief Load the content of the trace data file into a table / matrix made
++ *	  of columns / arrays of data. The user is responsible for freeing the
++ *	  elements of the outputted array
++ *
++ * @param kshark_ctx: Input location for the session context pointer.
++ * @param offset_array: Output location for the array of record offsets.
++ * @param cpu_array: Output location for the array of CPU Ids.
++ * @param ts_array: Output location for the array of timestamps.
++ * @param pid_array: Output location for the array of Process Ids.
++ * @param event_array: Output location for the array of Event Ids.
++ *
++ * @returns The size of the outputted arrays in the case of success, or a
++ *	    negative error code on failure.
++ */
++size_t kshark_load_data_matrix(struct kshark_context *kshark_ctx,
++			       uint64_t **offset_array,
++			       uint16_t **cpu_array,
++			       uint64_t **ts_array,
++			       uint16_t **pid_array,
++			       int **event_array)
++{
++	enum rec_type type = REC_ENTRY;
++	struct rec_list **rec_list;
++	size_t count, total = 0;
++	bool status;
++	int n_cpus;
++
++	total = get_records(kshark_ctx, &rec_list, type);
++	if (total < 0)
++		goto fail;
++
++	n_cpus = tracecmd_cpus(kshark_ctx->handle);
++
++	status = data_matrix_alloc(total, offset_array,
++					  cpu_array,
++					  ts_array,
++					  pid_array,
++					  event_array);
++	if (!status)
++		goto fail_free;
++
++	for (count = 0; count < total; count++) {
++		int next_cpu;
++
++		next_cpu = pick_next_cpu(rec_list, n_cpus, type);
++		if (next_cpu >= 0) {
++			struct rec_list *rec = rec_list[next_cpu];
++			struct kshark_entry *e = &rec->entry;
++
++			if (offset_array)
++				(*offset_array)[count] = e->offset;
++
++			if (cpu_array)
++				(*cpu_array)[count] = e->cpu;
++
++			if (ts_array)
++				(*ts_array)[count] = e->ts;
++
++			if (pid_array)
++				(*pid_array)[count] = e->pid;
++
++			if (event_array)
++				(*event_array)[count] = e->event_id;
++
++			rec_list[next_cpu] = rec_list[next_cpu]->next;
++			free(rec);
++		}
++	}
++
++	/* There should be no entries left in rec_list. */
++	free_rec_list(rec_list, n_cpus, type);
++	return total;
++
++ fail_free:
++	free_rec_list(rec_list, n_cpus, type);
++
++ fail:
++	fprintf(stderr, "Failed to allocate memory during data loading.\n");
++	return -ENOMEM;
++}
++
+ static const char *kshark_get_latency(struct tep_handle *pe,
+ 				      struct tep_record *record)
+ {
+diff --git a/kernel-shark/src/libkshark.h b/kernel-shark/src/libkshark.h
+index c218b61..27f7942 100644
+--- a/kernel-shark/src/libkshark.h
++++ b/kernel-shark/src/libkshark.h
+@@ -149,6 +149,13 @@ ssize_t kshark_load_data_entries(struct kshark_context *kshark_ctx,
+ ssize_t kshark_load_data_records(struct kshark_context *kshark_ctx,
+ 				 struct tep_record ***data_rows);
+ 
++size_t kshark_load_data_matrix(struct kshark_context *kshark_ctx,
++			       uint64_t **offset_array,
++			       uint16_t **cpu_array,
++			       uint64_t **ts_array,
++			       uint16_t **pid_array,
++			       int **event_array);
++
+ ssize_t kshark_get_task_pids(struct kshark_context *kshark_ctx, int **pids);
+ 
+ void kshark_close(struct kshark_context *kshark_ctx);
+
+From patchwork Thu May 30 13:13:30 2019
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Patchwork-Submitter: Yordan Karadzhov <ykaradzhov@vmware.com>
+X-Patchwork-Id: 10968701
+Return-Path: <linux-trace-devel-owner@kernel.org>
+Received: from mail.wl.linuxfoundation.org (pdx-wl-mail.web.codeaurora.org
+ [172.30.200.125])
+	by pdx-korg-patchwork-2.web.codeaurora.org (Postfix) with ESMTP id C8AAC14C0
+	for <patchwork-linux-trace-devel@patchwork.kernel.org>;
+ Thu, 30 May 2019 13:15:07 +0000 (UTC)
+Received: from mail.wl.linuxfoundation.org (localhost [127.0.0.1])
+	by mail.wl.linuxfoundation.org (Postfix) with ESMTP id BADBF28672
+	for <patchwork-linux-trace-devel@patchwork.kernel.org>;
+ Thu, 30 May 2019 13:15:07 +0000 (UTC)
+Received: by mail.wl.linuxfoundation.org (Postfix, from userid 486)
+	id AF57428910; Thu, 30 May 2019 13:15:07 +0000 (UTC)
+X-Spam-Checker-Version: SpamAssassin 3.3.1 (2010-03-16) on
+	pdx-wl-mail.web.codeaurora.org
+X-Spam-Level: 
+X-Spam-Status: No, score=-7.9 required=2.0 tests=BAYES_00,MAILING_LIST_MULTI,
+	RCVD_IN_DNSWL_HI autolearn=ham version=3.3.1
+Received: from vger.kernel.org (vger.kernel.org [209.132.180.67])
+	by mail.wl.linuxfoundation.org (Postfix) with ESMTP id 1919D28672
+	for <patchwork-linux-trace-devel@patchwork.kernel.org>;
+ Thu, 30 May 2019 13:15:07 +0000 (UTC)
+Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
+        id S1726253AbfE3NPG (ORCPT
+        <rfc822;patchwork-linux-trace-devel@patchwork.kernel.org>);
+        Thu, 30 May 2019 09:15:06 -0400
+Received: from mail-pl1-f182.google.com ([209.85.214.182]:40362 "EHLO
+        mail-pl1-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725919AbfE3NPG (ORCPT
+        <rfc822;linux-trace-devel@vger.kernel.org>);
+        Thu, 30 May 2019 09:15:06 -0400
+Received: by mail-pl1-f182.google.com with SMTP id g69so2558812plb.7
+        for <linux-trace-devel@vger.kernel.org>;
+ Thu, 30 May 2019 06:15:06 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+         :references:mime-version:content-transfer-encoding;
+        bh=F+T7GbWJRriRPe+v35HuXE1hEbCJIiZttFxZfcwJkuY=;
+        b=JmT+sXprnTV6rgnOW4IGppfKFZgFkwVzPvjBiHUOcaT9TAD/x15gp8Qcdr4/7j0mA1
+         kHT9P9DEIRXZeh9le1mohjh91inDdhCYIkPr99V/BhG0iED6Yq/hq0ZjFsMuvFho7G83
+         K5VaRrtzKNkrBZH7Fe5VRlHXXBjkWN43Bn4uW3gb2U3rmywrHf7Ke1hrNCAJAWmS6ehb
+         +zy7eRukFvhCTzZ7ziB/DByCBTTjAGFPZ9v9B3YMpJ/fA2PnkIfnjTR21PGF5R03jEUT
+         ++iXO6k938splMOND3bz3mDLOE3T2MzRh1Zwh6lUyLmdGlnmNCMwwq4TxGT6fx+smV/d
+         B3rA==
+X-Gm-Message-State: APjAAAUoU4RKm8KZqP+YiL6OK2alX1sH0CDJRini4MBIZi6zKxjUpCut
+        razGm3Sjs1nBh+AqQlR4YwI=
+X-Google-Smtp-Source: 
+ APXvYqx0lJay5J3FOA2RxzzTv+dcUGe76QV5xudHA56ZMxaZErz533bDIiAOeywJU+T1tXQdQ0PIZw==
+X-Received: by 2002:a17:902:2ae6:: with SMTP id
+ j93mr3818831plb.130.1559222105901;
+        Thu, 30 May 2019 06:15:05 -0700 (PDT)
+Received: from mamba.eng.vmware.com ([146.247.46.5])
+        by smtp.gmail.com with ESMTPSA id
+ d19sm2419627pjs.22.2019.05.30.06.15.04
+        (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 30 May 2019 06:15:05 -0700 (PDT)
+From: Yordan Karadzhov <ykaradzhov@vmware.com>
+To: rostedt@goodmis.org
+Cc: linux-trace-devel@vger.kernel.org,
+        Yordan Karadzhov <ykaradzhov@vmware.com>
+Subject: [PATCH 2/2] kernel-shark: Use full paths for non-standard library
+ headers
+Date: Thu, 30 May 2019 16:13:30 +0300
+Message-Id: <20190530131330.21701-3-ykaradzhov@vmware.com>
+X-Mailer: git-send-email 2.20.1
+In-Reply-To: <20190530131330.21701-1-ykaradzhov@vmware.com>
+References: <20190530131330.21701-1-ykaradzhov@vmware.com>
+MIME-Version: 1.0
+Sender: linux-trace-devel-owner@vger.kernel.org
+Precedence: bulk
+List-ID: <linux-trace-devel.vger.kernel.org>
+X-Mailing-List: linux-trace-devel@vger.kernel.org
+X-Virus-Scanned: ClamAV using ClamSMTP
+
+All header files included in the public interfaces of the trace-cmd
+and KernelShark libraries have to use full path when including other
+non-standard library headers. This will be useful if someone wants to use
+those public interfaces from there installation location.
+
+You may need to clean Cmake's cache after aplaying this patch:
+
+cd kernel-shark/build
+./cmake_clean.sh
+cmake ..
+
+Signed-off-by: Yordan Karadzhov <ykaradzhov@vmware.com>
+---
+ include/trace-cmd/trace-cmd.h         |  2 +-
+ include/traceevent/event-parse.h      |  2 +-
+ kernel-shark/CMakeLists.txt           |  3 +-
+ kernel-shark/build/FindTraceCmd.cmake | 44 +++++++++++----------------
+ kernel-shark/src/libkshark-plugin.h   |  2 +-
+ kernel-shark/src/libkshark.h          |  9 +++---
+ 6 files changed, 26 insertions(+), 36 deletions(-)
+
+diff --git a/include/trace-cmd/trace-cmd.h b/include/trace-cmd/trace-cmd.h
+index ceb03f4..9320098 100644
+--- a/include/trace-cmd/trace-cmd.h
++++ b/include/trace-cmd/trace-cmd.h
+@@ -6,7 +6,7 @@
+ #ifndef _TRACE_CMD_H
+ #define _TRACE_CMD_H
+ 
+-#include "event-parse.h"
++#include "traceevent/event-parse.h"
+ 
+ #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
+ #define __weak __attribute__((weak))
+diff --git a/include/traceevent/event-parse.h b/include/traceevent/event-parse.h
+index 5e0fd19..65cabd9 100644
+--- a/include/traceevent/event-parse.h
++++ b/include/traceevent/event-parse.h
+@@ -12,7 +12,7 @@
+ #include <regex.h>
+ #include <string.h>
+ 
+-#include "trace-seq.h"
++#include "traceevent/trace-seq.h"
+ 
+ #ifndef __maybe_unused
+ #define __maybe_unused __attribute__((unused))
+diff --git a/kernel-shark/CMakeLists.txt b/kernel-shark/CMakeLists.txt
+index 52e4a29..145b058 100644
+--- a/kernel-shark/CMakeLists.txt
++++ b/kernel-shark/CMakeLists.txt
+@@ -56,8 +56,7 @@ SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+ include_directories(${KS_DIR}/src/
+                     ${KS_DIR}/build/src/
+                     ${JSONC_INCLUDE_DIR}
+-                    ${TRACECMD_INCLUDE_DIR}
+-                    ${TRACEEVENT_INCLUDE_DIR})
++                    ${TRACECMD_INCLUDE_DIR})
+ 
+ message("")
+ message(STATUS "C flags      : " ${CMAKE_C_FLAGS})
+diff --git a/kernel-shark/build/FindTraceCmd.cmake b/kernel-shark/build/FindTraceCmd.cmake
+index b09a11b..8c51f11 100644
+--- a/kernel-shark/build/FindTraceCmd.cmake
++++ b/kernel-shark/build/FindTraceCmd.cmake
+@@ -2,13 +2,10 @@
+ # This module finds an installed trace-cmd package.
+ #
+ # It sets the following variables:
+-#  TRACEEVENT_INCLUDE_DIR, where to find traceevent header.
+-#  TRACEEVENT_LIBRARY_DIR , where to find the traceevent library.
+ #  TRACEEVENT_LIBRARY, traceevent the library.
+ #  TRACEEVENT_FOUND, If false, do not try to use traceevent.
+ #
+ #  TRACECMD_INCLUDE_DIR, where to find trace-cmd header.
+-#  TRACECMD_LIBRARY_DIR , where to find the trace-cmd library.
+ #  TRACECMD_LIBRARY, the trace-cmd library.
+ #  TRACECMD_FOUND, If false, do not try to use trace-cmd.
+ 
+@@ -20,28 +17,33 @@ find_path(TRACECMD_BIN_DIR      NAMES  trace-cmd
+                                        ${CMAKE_SOURCE_DIR}/../tracecmd/
+                                 NO_DEFAULT_PATH)
+ 
+-find_path(TRACECMD_INCLUDE_DIR  NAMES  trace-cmd.h
+-                                PATHS  $ENV{TRACE_CMD}/include/trace-cmd/
+-                                       ${CMAKE_SOURCE_DIR}/../include/trace-cmd/
++find_path(TRACECMD_INCLUDE_DIR  NAMES  trace-cmd/trace-cmd.h
++                                PATHS  $ENV{TRACE_CMD}/include/
++                                       ${CMAKE_SOURCE_DIR}/../include/
+                                 NO_DEFAULT_PATH)
+ 
+-find_path(TRACECMD_LIBRARY_DIR  NAMES  libtracecmd.a
+-                                PATHS  $ENV{TRACE_CMD}/lib/trace-cmd/
+-                                       ${CMAKE_SOURCE_DIR}/../lib/trace-cmd/
++find_library(TRACECMD_LIBRARY   NAMES  trace-cmd/libtracecmd.a
++                                PATHS  $ENV{TRACE_CMD}/lib/
++                                       ${CMAKE_SOURCE_DIR}/../lib/
++                                NO_DEFAULT_PATH)
++
++find_library(TRACEEVENT_LIBRARY NAMES  traceevent/libtraceevent.a
++                                PATHS  $ENV{TRACE_CMD}/lib/
++                                       ${CMAKE_SOURCE_DIR}/../lib/
+                                 NO_DEFAULT_PATH)
+ 
+ # If not found, search in the default system paths. Note that if the previous
+ # search was successful "find_path" will do nothing this time.
+ find_path(TRACECMD_BIN_DIR      NAMES  trace-cmd)
+-find_path(TRACECMD_INCLUDE_DIR  NAMES  trace-cmd.h)
+-find_path(TRACECMD_LIBRARY_DIR  NAMES  libtracecmd.a)
++find_path(TRACECMD_INCLUDE_DIR  NAMES  trace-cmd/trace-cmd.h)
++find_library(TRACECMD_LIBRARY   NAMES  trace-cmd/libtracecmd.so)
++find_library(TRACEEVENT_LIBRARY NAMES  traceevent/libtraceevent.so)
+ 
+-IF (TRACECMD_INCLUDE_DIR AND TRACECMD_LIBRARY_DIR)
++IF (TRACECMD_INCLUDE_DIR AND TRACECMD_LIBRARY)
+ 
+   SET(TRACECMD_FOUND TRUE)
+-  SET(TRACECMD_LIBRARY "${TRACECMD_LIBRARY_DIR}/libtracecmd.a")
+ 
+-ENDIF (TRACECMD_INCLUDE_DIR AND TRACECMD_LIBRARY_DIR)
++ENDIF (TRACECMD_INCLUDE_DIR AND TRACECMD_LIBRARY)
+ 
+ IF (TRACECMD_FOUND)
+ 
+@@ -53,21 +55,11 @@ ELSE (TRACECMD_FOUND)
+ 
+ ENDIF (TRACECMD_FOUND)
+ 
+-
+-find_path(TRACEEVENT_INCLUDE_DIR  NAMES  event-parse.h
+-                                  PATHS  $ENV{TRACE_CMD}/include/traceevent/
+-                                         ${CMAKE_SOURCE_DIR}/../include/traceevent/)
+-
+-find_path(TRACEEVENT_LIBRARY_DIR  NAMES  libtraceevent.a
+-                                  PATHS  $ENV{TRACE_CMD}/lib/traceevent/
+-                                         ${CMAKE_SOURCE_DIR}/../lib/traceevent/)
+-
+-IF (TRACEEVENT_INCLUDE_DIR AND TRACEEVENT_LIBRARY_DIR)
++IF (TRACEEVENT_LIBRARY)
+ 
+   SET(TRACEEVENT_FOUND TRUE)
+-  SET(TRACEEVENT_LIBRARY "${TRACEEVENT_LIBRARY_DIR}/libtraceevent.a")
+ 
+-ENDIF (TRACEEVENT_INCLUDE_DIR AND TRACEEVENT_LIBRARY_DIR)
++ENDIF (TRACEEVENT_LIBRARY)
+ 
+ IF (TRACEEVENT_FOUND)
+ 
+diff --git a/kernel-shark/src/libkshark-plugin.h b/kernel-shark/src/libkshark-plugin.h
+index 0cb677a..b3cf1c6 100644
+--- a/kernel-shark/src/libkshark-plugin.h
++++ b/kernel-shark/src/libkshark-plugin.h
+@@ -17,7 +17,7 @@ extern "C" {
+ #endif // __cplusplus
+ 
+ // trace-cmd
+-#include "event-parse.h"
++#include "traceevent/event-parse.h"
+ 
+ /* Quiet warnings over documenting simple structures */
+ //! @cond Doxygen_Suppress
+diff --git a/kernel-shark/src/libkshark.h b/kernel-shark/src/libkshark.h
+index 27f7942..fe35333 100644
+--- a/kernel-shark/src/libkshark.h
++++ b/kernel-shark/src/libkshark.h
+@@ -18,17 +18,16 @@
+ #include <errno.h>
+ 
+ // Json-C
+-#include <json.h>
++#include <json-c/json.h>
+ 
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+ 
+ // trace-cmd
+-#include "trace-cmd.h"
+-#include "trace-filter-hash.h"
+-#include "event-parse.h"
+-#include "trace-filter-hash.h"
++#include "trace-cmd/trace-cmd.h"
++#include "trace-cmd/trace-filter-hash.h"
++#include "traceevent/event-parse.h"
+ 
+ // KernelShark
+ #include "libkshark-plugin.h"

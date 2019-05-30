@@ -1,0 +1,51 @@
+Python API for processing of FTRACE (trace-cmd) data
+
+NumPy is an efficient multi-dimensional container of generic data.
+It uses strong typing in order to provide fast data processing in
+Python. The NumPy interface for Ftrace (trace-cmd) data will allow
+sophisticated analysis of kernel tracing data via scripts, but it
+also opens the door for exposing the kernel tracing data to the
+instruments provided by the scientific toolkit of Python (matplotlib,
+stats, scikit-learn).
+
+Third Party Software:
+------------------------------------------------------------
+The NumPy API has the following external dependencies:
+  trace-cmd / KernelShark, Json-C, Cython, NumPy, MatPlotLib.
+
+1. In order to install the packages on Ubuntu do the following:
+    sudo apt-get install libjson-c-dev libpython3-dev cython3 -y
+    sudo apt-get install python3-numpy python3-matplotlib -y
+
+2. In order to install the packages on Fedora, as root do the following:
+    dnf install json-c-devel python3-devel python3-Cython -y
+    dnf install python3-numpy python3-matplotlib -y
+
+3. In order to get the latest version of KernelShark/ trace-cmd do the
+following:
+    git clone git://git.kernel.org/pub/scm/utils/trace-cmd/trace-cmd.git
+
+Building:
+------------------------------------------------------------
+1. Patch trace-cmd / KernelShark:
+    cd path/to/trace-cmd/
+    git am ../kshark-py/To-be-included-in-KS-1.0.patch
+    git am ../kshark-py/Modifications-needed-by-the-NumPy-interface.patch
+
+2. Install trace-cmd:
+    make
+    sudo make install_libs
+
+3. Install KernelShark:
+    cd kernel-shark/build
+    cmake -D_DEVEL=1 ../
+    make
+    sudo make install
+
+4. Build the NumPy API itself:
+    cd path/to/kshark-py
+    ./np_setup.py build_ext -i
+
+For bug reports and issues, please file it here:
+
+https://bugzilla.kernel.org/buglist.cgi?component=Trace-cmd%2FKernelshark&product=Tools&resolution=---
